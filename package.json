@@ -16,18 +16,30 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx --watch --env-file .env.development src/index.ts",
-    "test": "jest"
+    "dev:staging": "tsx --watch --env-file .env.staging src/index.ts",
+    "dev:prod": "tsx --watch --env-file .env.production src/index.ts",
+    "start": "node --env-file .env.production dist/src/index.js",
+    "build": "tsc -p tsconfig.prod.json",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@commitlint/types": "^20.5.0",
     "@eslint/js": "^10.0.1",
     "@tsconfig/node24": "^24.0.4",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
     "eslint": "^10.2.1",
     "eslint-plugin-perfectionist": "^5.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
@@ -39,5 +51,14 @@
       "types": "./src/*",
       "default": "./dist/src/*"
     }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint",
+      "prettier --check"
+    ],
+    "*.{json,yml,yaml,md}": [
+      "prettier --check"
+    ]
   }
 }
