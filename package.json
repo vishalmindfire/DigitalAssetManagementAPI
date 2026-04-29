@@ -22,10 +22,22 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tsconfig/node24": "^24.0.4",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.0",
+    "eslint": "^10.2.1",
+    "eslint-plugin-perfectionist": "^5.9.0",
+    "prettier": "^3.8.3",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.1"
+  },
+  "imports": {
+    "#*": {
+      "development": "./src/*",
+      "types": "./src/*",
+      "default": "./dist/src/*"
+    }
   }
 }
