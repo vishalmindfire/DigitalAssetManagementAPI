@@ -1,0 +1,31 @@
+{
+  "name": "digitalassetmanagementapi",
+  "version": "1.0.0",
+  "description": "REST API for file upload system with filter and search",
+  "homepage": "https://github.com/vishalmindfire/DigitalAssetManagementAPI#readme",
+  "bugs": {
+    "url": "https://github.com/vishalmindfire/DigitalAssetManagementAPI/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vishalmindfire/DigitalAssetManagementAPI.git"
+  },
+  "license": "MIT",
+  "author": "Vishal Minz",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx --watch --env-file .env.development src/index.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
