@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "nodeNext",
+    "moduleResolution": "node",
+    "paths": {
+      "#index.js": ["./src/index.ts"]
+    }
+  }
+}
