@@ -7,6 +7,6 @@
       "#*": ["./src/*"]
     }
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "/types/express.d.ts"],
   "exclude": ["dist"]
 }
