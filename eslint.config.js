@@ -13,7 +13,7 @@ export default tseslint.config(
   tseslint.configs.recommendedTypeChecked,
   {
     rules: {
-      'no-console': ['error', { allow: ['warn', 'error'] }],
+      'no-console': ['error'],
     },
     languageOptions: {
       parserOptions: {
