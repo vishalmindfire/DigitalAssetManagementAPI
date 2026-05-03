@@ -8,3 +8,4 @@ export const minioClient = new Client({
   useSSL: false,
 });
 export const BUCKET = 'files';
+export const THUMBNAIL_BUCKET = 'thumbnails';

@@ -1,5 +1,6 @@
 import type { AssetMessage } from '#infrastructure/messaging/types/asset.js';
 
+import { UploadedAssetUseCase } from '#application/use-case/UploadedAssetUseCase.js';
 import { BUCKET, minioClient } from '#configs/minioConfig.js';
 import { createRabbitMQChannel, QUEUE } from '#configs/rabbitmqConfig.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
@@ -12,8 +13,8 @@ export async function startAssetConsumer(): Promise<void> {
   await channel.consume(QUEUE, (msg) => {
     if (!msg) return;
     const handle = async () => {
-      await parseAssetMessage(msg.content);
-      //await processAsset(asset);
+      const asset = await parseAssetMessage(msg.content);
+      await new UploadedAssetUseCase().execute(asset);
       channel.ack(msg);
     };
 
