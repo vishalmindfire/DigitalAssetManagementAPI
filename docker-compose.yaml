@@ -1,0 +1,93 @@
+version: '3'
+services:
+  nodeworkerapp:
+    image: worker:latest
+    restart: unless-stopped
+    container_name: nodejs-worker-app-container
+    env_file:
+      - .env.docker
+    ports:
+      - '${HTTPS_PORT}:4000'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - ./definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_CONFIG_FILE=/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_running']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - backend
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      # Enable AMQP notifications
+      MINIO_NOTIFY_AMQP_ENABLE: 'on'
+      # Point to RabbitMQ service on port 5672
+      MINIO_NOTIFY_AMQP_URL: 'amqp://guest:guest@rabbitmq:5672'
+      # Optional: Configure exchange and routing key
+      MINIO_NOTIFY_AMQP_EXCHANGE: 'dam.events'
+      MINIO_NOTIFY_AMQP_ROUTING_KEY: 'dam.events.uploaded'
+      MINIO_NOTIFY_AMQP_EXCHANGE_TYPE: 'topic'
+      MINIO_NOTIFY_AMQP_DURABLE: 'on'
+      MINIO_NOTIFY_AMQP_MANDATORY: 'off'
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  create-bucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+        until mc alias set myminio http://minio:9000 minioadmin minioadmin > /dev/null 2>&1; do
+          echo 'Waiting for MinIO...'; sleep 1;
+        done;
+        mc mb myminio/files --ignore-existing;
+        mc mb myminio/thumbnails --ignore-existing;
+        mc mb myminio/videos --ignore-existing;
+        mc version enable myminio/files
+        mc event add myminio/files arn:minio:sqs::_:amqp --event put;
+        mc anonymous set public myminio/files;
+      "
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  minio_data:
