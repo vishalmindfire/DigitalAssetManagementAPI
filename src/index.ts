@@ -27,9 +27,7 @@ app.use('/upload', createUploadRoute(uploadFile));
 
 if (process.env.NODE_ENV !== 'test') {
   const server = http.createServer(app);
-  server.listen(httpPort, () => {
-    console.log(`HTTP server listening on port ${httpPort}`);
-  });
+  server.listen(httpPort);
 }
 
 export default app;

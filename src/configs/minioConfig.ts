@@ -7,5 +7,4 @@ export const minioClient = new Client({
   secretKey: process.env.MINIO_SECRET_KEY ?? 'minioadmin',
   useSSL: false,
 });
-//console.log(minioClient);
 export const BUCKET = 'files';

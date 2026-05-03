@@ -7,5 +7,3 @@ export const pgPool = new Pool({
   port: Number(process.env.DB_PORT) || 5432,
   user: process.env.DB_USER ?? 'postgres',
 });
-
-//console.log(pgPool);

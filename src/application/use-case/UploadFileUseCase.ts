@@ -16,9 +16,10 @@ export class UploadFileUseCase {
   async execute(fileName: string, mimeType: string, buffer: Buffer): Promise<File> {
     const rawExt = fileName.split('.').pop() ?? '';
     const ext = FileExtension.from(rawExt as Parameters<typeof FileExtension.from>[0]);
+    const fileId = new FileId(uuidv4());
     const storagePath = await this.storage.upload(fileName, buffer, mimeType);
 
-    const file = new File(new FileId(uuidv4()), fileName, ext, storagePath, FileStatus.PENDING, null);
+    const file = new File(fileId, fileName, ext, storagePath, FileStatus.PENDING, null);
 
     await this.fileRepo.save(file);
     return file;

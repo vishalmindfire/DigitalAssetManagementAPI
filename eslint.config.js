@@ -12,6 +12,9 @@ export default tseslint.config(
   tseslint.configs.stylisticTypeChecked,
   tseslint.configs.recommendedTypeChecked,
   {
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
     languageOptions: {
       parserOptions: {
         tsconfigRootDir: import.meta.dirname,
