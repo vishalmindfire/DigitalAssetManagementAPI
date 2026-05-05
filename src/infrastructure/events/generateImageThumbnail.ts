@@ -1,6 +1,5 @@
 import sharp from 'sharp';
 
-import { minioClient, THUMBNAIL_BUCKET } from '#configs/minioConfig.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
 import { AssetMessage } from '#infrastructure/messaging/types/asset.js';
 import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
@@ -12,6 +11,7 @@ export class GenerateImageThumbnail {
 
   constructor(
     private asset: AssetMessage,
+    private storage: MinioStorage,
     private imageBuffer: Buffer
   ) {}
 
@@ -26,9 +26,8 @@ export class GenerateImageThumbnail {
       .jpeg({ quality: GenerateImageThumbnail.THUMBNAIL_QUALITY })
       .toBuffer();
 
-    const minioStorage = new MinioStorage(minioClient, THUMBNAIL_BUCKET);
     const key = this.thumbnailKey(this.asset.objectKey);
-    await minioStorage.upload(key, thumbBuffer, 'image/jpeg');
+    await this.storage.uploadThumbnail(key, thumbBuffer, 'image/jpeg');
 
     logger.info(`[imageService] thumbnail uploaded → ${key}`);
   }

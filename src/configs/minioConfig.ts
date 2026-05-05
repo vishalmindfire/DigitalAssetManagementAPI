@@ -9,3 +9,4 @@ export const minioClient = new Client({
 });
 export const BUCKET = 'files';
 export const THUMBNAIL_BUCKET = 'thumbnails';
+export const VIDEO_BUCKET = 'videos';

@@ -5,7 +5,7 @@ import http from 'http';
 import morgan from 'morgan';
 
 import { UploadFileUseCase } from '#application/use-case/UploadFileUseCase.js';
-import { BUCKET, minioClient } from '#configs/minioConfig.js';
+import { BUCKET, minioClient, THUMBNAIL_BUCKET, VIDEO_BUCKET } from '#configs/minioConfig.js';
 import { pgPool } from '#configs/postgresConfig.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
 import { PostgresFileRepository } from '#infrastructure/persistence/PostgresFileRepository.js';
@@ -15,7 +15,7 @@ import { createUploadRoute } from '#interfaces/http/uploadRoute.js';
 const app = express();
 const httpPort = process.env.HTTP_PORT ?? '3000';
 
-const storage = new MinioStorage(minioClient, BUCKET);
+const storage = new MinioStorage(minioClient, BUCKET, THUMBNAIL_BUCKET, VIDEO_BUCKET);
 const fileRepo = new PostgresFileRepository(pgPool);
 const uploadFile = new UploadFileUseCase(fileRepo, storage);
 

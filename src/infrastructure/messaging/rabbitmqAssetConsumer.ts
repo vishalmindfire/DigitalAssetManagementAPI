@@ -1,20 +1,24 @@
 import type { AssetMessage } from '#infrastructure/messaging/types/asset.js';
 
 import { UploadedAssetUseCase } from '#application/use-case/UploadedAssetUseCase.js';
-import { BUCKET, minioClient } from '#configs/minioConfig.js';
+import { BUCKET, minioClient, THUMBNAIL_BUCKET, VIDEO_BUCKET } from '#configs/minioConfig.js';
 import { createRabbitMQChannel, QUEUE } from '#configs/rabbitmqConfig.js';
+import { VideoProcessor } from '#infrastructure/events/processVideo.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
+import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
 
 export async function startAssetConsumer(): Promise<void> {
   const { channel, connection } = await createRabbitMQChannel();
 
+  const minioStorage = new MinioStorage(minioClient, BUCKET, THUMBNAIL_BUCKET, VIDEO_BUCKET);
+  const videoProcessor = new VideoProcessor();
   await channel.prefetch(1);
 
   await channel.consume(QUEUE, (msg) => {
     if (!msg) return;
     const handle = async () => {
       const asset = await parseAssetMessage(msg.content);
-      await new UploadedAssetUseCase().execute(asset);
+      await new UploadedAssetUseCase(minioStorage, videoProcessor).execute(asset);
       channel.ack(msg);
     };
 

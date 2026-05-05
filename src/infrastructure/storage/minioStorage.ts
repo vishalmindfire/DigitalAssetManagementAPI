@@ -1,7 +1,8 @@
 import { Client } from 'minio';
+import { Readable } from 'stream';
 
 import { FileStorage } from '#domain/repositories/fileStorage.js';
-
+import { logger } from '#infrastructure/logging/winstonLogger.js';
 export class MinioStorage implements FileStorage {
   constructor(
     private client: Client,
@@ -10,14 +11,23 @@ export class MinioStorage implements FileStorage {
     private videoBucket: string
   ) {}
 
-  async download(objectKey: string): Promise<Buffer> {
-    const stream = await this.client.getObject(this.bucket, objectKey);
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as ArrayBuffer));
+  async download(bucket: string, objectKey: string): Promise<Readable> {
+    try {
+      const stream = await this.client.getObject(bucket, objectKey);
+
+      stream.on('error', (err) => {
+        logger.error(`[MinIO READ ERROR] ${bucket}/${objectKey}: ${err}`);
+      });
+
+      return stream;
+    } catch (err) {
+      logger.error(`[MinIO GET OBJECT FAILED] ${bucket}/${objectKey}: ${err instanceof Error ? err.message : 'unexpected error'}`);
+      throw err;
     }
-    const buffer = Buffer.concat(chunks);
-    return buffer;
+  }
+
+  async downloadFile(objectKey: string): Promise<Readable> {
+    return this.download(this.bucket, objectKey);
   }
 
   getFilesBucket(): string {
@@ -32,19 +42,23 @@ export class MinioStorage implements FileStorage {
     return this.videoBucket;
   }
 
-  async upload(bucket: string, fileName: string, buffer: Buffer, mimeType: string): Promise<string> {
-    await this.client.putObject(bucket, fileName, buffer, buffer.length, {
+  async upload(bucket: string, fileName: string, stream: Readable, mimeType: string): Promise<string> {
+    await this.client.putObject(bucket, fileName, stream, undefined, {
       'Content-Type': mimeType,
     });
 
     return `${this.bucket}/${fileName}`;
   }
 
-  async uploadFile(fileName: string, buffer: Buffer, mimeType: string): Promise<string> {
-    return this.upload(this.bucket, fileName, buffer, mimeType);
+  async uploadFile(fileName: string, stream: Readable, mimeType: string): Promise<string> {
+    return this.upload(this.bucket, fileName, stream, mimeType);
   }
 
-  async uploadThumbnail(fileName: string, buffer: Buffer, mimeType: string): Promise<string> {
-    return this.upload(this.thumbnailBucket, fileName, buffer, mimeType);
+  async uploadThumbnail(fileName: string, stream: Readable, mimeType: string): Promise<string> {
+    return this.upload(this.thumbnailBucket, fileName, stream, mimeType);
+  }
+
+  async uploadVideo(fileName: string, stream: Readable, mimeType: string): Promise<string> {
+    return this.upload(this.videoBucket, fileName, stream, mimeType);
   }
 }

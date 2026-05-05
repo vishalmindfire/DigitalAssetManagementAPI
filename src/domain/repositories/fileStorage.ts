@@ -1,9 +1,12 @@
+import { Readable } from 'stream';
+
 export interface FileStorage {
-  download(objectKey: string): Promise<Buffer>;
+  download(bucket: string, objectKey: string): Promise<Readable>;
+  downloadFile(objectKey: string): Promise<Readable>;
   getFilesBucket(): string;
   getThumbnailsBucket(): string;
   getVideosBucket(): string;
-  upload(bucket: string, fileName: string, buffer: Buffer, mimeType: string): Promise<string>;
-  uploadFile(fileName: string, buffer: Buffer, mimeType: string): Promise<string>;
-  uploadThumbnail(fileName: string, buffer: Buffer, mimeType: string): Promise<string>;
+  upload(bucket: string, fileName: string, stream: Readable, mimeType: string): Promise<string>;
+  uploadFile(fileName: string, stream: Readable, mimeType: string): Promise<string>;
+  uploadThumbnail(fileName: string, stream: Readable, mimeType: string): Promise<string>;
 }
