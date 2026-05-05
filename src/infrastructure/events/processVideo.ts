@@ -99,6 +99,7 @@ export class VideoProcessor {
         ffmpeg.kill('SIGKILL');
       }
     });
+
     ffmpeg.stderr.on('data', (d: Buffer) => {
       logger.warn(`[ffmpeg thumbnail] ${d.toString()}`);
     });
@@ -163,28 +164,55 @@ export class VideoProcessor {
     const ffmpeg = spawn(VideoProcessor.FFMPEG_BIN, args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     const output = new PassThrough();
-    input.pipe(ffmpeg.stdin);
-    ffmpeg.stdout.pipe(output);
+
+    pipeline(input, ffmpeg.stdin, (err) => {
+      if (err && err.code !== 'EPIPE') {
+        logger.error(`[ffmpeg ${rendition.label}] stdin pipeline error`, err);
+        output.destroy(err);
+        ffmpeg.kill('SIGKILL');
+      }
+    });
+
+    pipeline(ffmpeg.stdout, output, (err) => {
+      if (err) {
+        logger.error(`[ffmpeg ${rendition.label}] stdout pipeline error`, err);
+        ffmpeg.kill('SIGKILL');
+      }
+    });
 
     ffmpeg.stderr.on('data', (d: Buffer) => {
       logger.warn(`[ffmpeg ${rendition.label}] ${d.toString()}`);
     });
 
-    ffmpeg.stdin.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code !== 'EPIPE') output.destroy(err);
-    });
-
-    ffmpeg.on('error', (err) => {
+    ffmpeg.once('error', (err) => {
       output.destroy(err);
     });
 
-    ffmpeg.on('close', (code) => {
-      input.unpipe(ffmpeg.stdin);
+    ffmpeg.once('close', (code) => {
       if (code === 0) {
         logger.info(`[video] transcoded ${rendition.label}`);
+        output.end();
       } else {
         output.destroy(new Error(`FFmpeg transcode failed for ${rendition.label} with code ${String(code)}`));
       }
+    });
+
+    output.once('close', () => {
+      if (!ffmpeg.killed) {
+        ffmpeg.kill('SIGKILL');
+      }
+    });
+
+    const timeout = setTimeout(() => {
+      if (!ffmpeg.killed) {
+        logger.error('[ffmpeg] timeout, killing process');
+        ffmpeg.kill('SIGKILL');
+        output.destroy(new Error('FFmpeg timeout'));
+      }
+    }, 15000);
+
+    ffmpeg.once('close', () => {
+      clearTimeout(timeout);
     });
 
     return { process: ffmpeg, stream: output };
