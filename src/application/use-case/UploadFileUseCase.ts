@@ -17,7 +17,7 @@ export class UploadFileUseCase {
     const rawExt = fileName.split('.').pop() ?? '';
     const ext = FileExtension.from(rawExt as Parameters<typeof FileExtension.from>[0]);
     const fileId = new FileId(uuidv4());
-    const storagePath = await this.storage.upload(fileName, buffer, mimeType);
+    const storagePath = await this.storage.uploadFile(fileName, buffer, mimeType);
 
     const file = new File(fileId, fileName, ext, storagePath, FileStatus.PENDING, null);
 
