@@ -9,4 +9,5 @@ export interface FileStorage {
   upload(bucket: string, fileName: string, stream: Readable, mimeType: string): Promise<string>;
   uploadFile(fileName: string, stream: Readable, mimeType: string): Promise<string>;
   uploadThumbnail(fileName: string, stream: Readable, mimeType: string): Promise<string>;
+  uploadVideo(fileName: string, stream: Readable, mimeType: string): Promise<string>;
 }

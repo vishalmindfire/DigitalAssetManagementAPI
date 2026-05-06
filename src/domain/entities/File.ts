@@ -3,34 +3,77 @@ import { FileId } from '#domain/value-objects/FileId.js';
 import { FileStatus } from '#domain/value-objects/FileStatus.js';
 
 interface fileDetail {
-  ext: FileExtension;
+  bucket: string;
+  createdDate: Date;
+  ext: FileExtension | null;
   id: FileId;
-  name: string;
-  path: string;
+  mimeType: string | null;
+  objectKey: string;
+  progress: number;
   status: FileStatus;
-  uploadDate: Date | null;
+  topId: FileId;
+  updatedDate: Date | null;
 }
 
 export class File implements fileDetail {
   constructor(
     public readonly id: fileDetail['id'],
-    public readonly name: fileDetail['name'],
+    public readonly topId: fileDetail['topId'],
     public readonly ext: fileDetail['ext'],
-    public readonly path: fileDetail['path'],
+    public readonly mimeType: fileDetail['mimeType'],
+    public readonly bucket: fileDetail['bucket'],
+    public readonly objectKey: fileDetail['objectKey'],
+    public progress: fileDetail['progress'],
     public status: fileDetail['status'],
-    public uploadDate: fileDetail['uploadDate']
+    public createdDate: fileDetail['createdDate'],
+    public updatedDate: fileDetail['updatedDate']
   ) {}
 
-  getExtension(): string {
-    return this.ext.getValue();
+  public generateFileTags(): string[] {
+    const fileName: string = this.objectKey.split('/').pop() ?? '';
+    const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+    const words: string[] = baseName.split(/[\s | _]+/);
+    return words;
   }
 
-  getName() {
-    return this.name;
+  public getBucket() {
+    return this.bucket;
   }
 
-  getStatus() {
+  public getCreatedDate() {
+    return this.createdDate;
+  }
+
+  public getExtension() {
+    return this.ext ? this.ext.getValue() : null;
+  }
+
+  public getId(): string {
+    return this.id.value;
+  }
+
+  public getMimeType() {
+    return this.mimeType;
+  }
+
+  public getObjectKey(): string {
+    return this.objectKey;
+  }
+
+  public getProgress() {
+    return this.progress;
+  }
+
+  public getStatus() {
     return this.status.getValue();
+  }
+
+  public getTopId(): string {
+    return this.topId.value;
+  }
+
+  public getUpdatedDate() {
+    return this.updatedDate;
   }
 
   markCompleted() {
@@ -43,6 +86,10 @@ export class File implements fileDetail {
 
   markProcessing() {
     this.transition(FileStatus.PROCESSING);
+  }
+
+  setProgress(progress: number) {
+    this.progress = progress;
   }
 
   private transition(next: FileStatus) {

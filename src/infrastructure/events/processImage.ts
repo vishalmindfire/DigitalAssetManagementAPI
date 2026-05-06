@@ -9,15 +9,18 @@ export class ImageProcessor {
   static readonly THUMBNAIL_WIDTH = 200;
 
   async generate(image: Buffer, asset: AssetMessage): Promise<Buffer> {
-    const thumbBuffer = await sharp(image)
+    await sharp(image).metadata();
+
+    const resized = await sharp(image)
       .resize({
         fit: 'inside',
         height: ImageProcessor.THUMBNAIL_HEIGHT,
         width: ImageProcessor.THUMBNAIL_WIDTH,
         withoutEnlargement: true,
       })
-      .jpeg({ quality: ImageProcessor.THUMBNAIL_QUALITY })
       .toBuffer();
+
+    const thumbBuffer = await sharp(resized).jpeg({ quality: ImageProcessor.THUMBNAIL_QUALITY }).toBuffer();
 
     logger.info(`[imageService] thumbnail generated → ${asset.objectKey}`);
     return thumbBuffer;

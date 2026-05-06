@@ -5,10 +5,14 @@ import { VideoProcessor } from '#infrastructure/events/processVideo.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
 import { AssetMessage, detectAssetType } from '#infrastructure/messaging/types/asset.js';
 import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
+import { FileRepository } from '#domain/repositories/fileRepository.js';
+import { FileTagRepository } from '#domain/repositories/fileTagRepository.js';
 
 export class UploadedAssetUseCase {
   constructor(
     private readonly storage: MinioStorage,
+    private fileRepo: FileRepository,
+    private fileTagRepo: FileTagRepository,
     private videoProcessor: VideoProcessor,
     private imageProcessor: ImageProcessor
   ) {}
@@ -17,10 +21,10 @@ export class UploadedAssetUseCase {
 
     switch (assetType) {
       case 'image':
-        await new UploadedImageUseCase(this.storage, this.imageProcessor).execute(asset);
+        await new UploadedImageUseCase(this.storage, this.fileRepo, this.fileTagRepo, this.imageProcessor).execute(asset);
         break;
       case 'video':
-        await new UploadedVideoUseCase(this.storage, this.videoProcessor).execute(asset);
+        await new UploadedVideoUseCase(this.storage, this.fileRepo, this.fileTagRepo, this.videoProcessor).execute(asset);
         break;
       default:
         logger.warn(`[assetController] unsupported asset type for mime "${asset.mimeType}" (id: ${asset.objectKey})`);

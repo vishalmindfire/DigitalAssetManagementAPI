@@ -11,13 +11,15 @@ import { logger } from '#infrastructure/logging/winstonLogger.js';
 import { PostgresFileRepository } from '#infrastructure/persistence/PostgresFileRepository.js';
 import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
 import { createUploadRoute } from '#interfaces/http/uploadRoute.js';
+import { PostgresFileTagsRepository } from '#infrastructure/persistence/PostgresFileTags.js';
 
 const app = express();
 const httpPort = process.env.HTTP_PORT ?? '3000';
 
 const storage = new MinioStorage(minioClient, BUCKET, THUMBNAIL_BUCKET, VIDEO_BUCKET);
 const fileRepo = new PostgresFileRepository(pgPool);
-const uploadFile = new UploadFileUseCase(fileRepo, storage);
+const fileTagRepo = new PostgresFileTagsRepository(pgPool);
+const uploadFile = new UploadFileUseCase(fileRepo, fileTagRepo, storage);
 
 app.use(morgan('combined'));
 

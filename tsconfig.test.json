@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "nodeNext",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "paths": {
       "#index.js": ["./src/index.ts"],

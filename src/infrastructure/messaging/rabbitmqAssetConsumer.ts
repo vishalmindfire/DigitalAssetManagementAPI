@@ -5,13 +5,18 @@ import { BUCKET, minioClient, THUMBNAIL_BUCKET, VIDEO_BUCKET } from '#configs/mi
 import { createRabbitMQChannel, QUEUE } from '#configs/rabbitmqConfig.js';
 import { ImageProcessor } from '#infrastructure/events/processImage.js';
 import { VideoProcessor } from '#infrastructure/events/processVideo.js';
+import { pgPool } from '#configs/postgresConfig.js';
 import { logger } from '#infrastructure/logging/winstonLogger.js';
+import { PostgresFileRepository } from '#infrastructure/persistence/PostgresFileRepository.js';
 import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
+import { PostgresFileTagsRepository } from '#infrastructure/persistence/PostgresFileTags.js';
 
 export async function startAssetConsumer(): Promise<void> {
   const { channel, connection } = await createRabbitMQChannel();
 
   const minioStorage = new MinioStorage(minioClient, BUCKET, THUMBNAIL_BUCKET, VIDEO_BUCKET);
+  const fileRepo = new PostgresFileRepository(pgPool);
+  const fileTagRepo = new PostgresFileTagsRepository(pgPool);
   const videoProcessor = new VideoProcessor();
   const imageProcessor = new ImageProcessor();
   await channel.prefetch(1);
@@ -20,7 +25,7 @@ export async function startAssetConsumer(): Promise<void> {
     if (!msg) return;
     const handle = async () => {
       const asset = await parseAssetMessage(msg.content);
-      await new UploadedAssetUseCase(minioStorage, videoProcessor, imageProcessor).execute(asset);
+      await new UploadedAssetUseCase(minioStorage, fileRepo, fileTagRepo, videoProcessor, imageProcessor).execute(asset);
       channel.ack(msg);
     };
 

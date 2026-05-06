@@ -25,6 +25,5 @@ export default tseslint.config(
   {
     files: ['**/*.test.ts', '**/*.spec.ts'],
     plugins: { jest: pluginJest },
-  },
-  perfectionist.configs['recommended-natural']
+  }
 );

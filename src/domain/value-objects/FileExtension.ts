@@ -1,3 +1,4 @@
+const IMAGE_EXTENSIONS = ['gif', 'jpeg', 'jpg', 'png', 'svg', 'webp'];
 type extensions = imageExtensions | videoExtensions;
 type imageExtensions = 'gif' | 'jpeg' | 'jpg' | 'png' | 'svg' | 'webp';
 type videoExtensions = 'avi' | 'flv' | 'mkv' | 'mov' | 'mp4' | 'mpeg' | 'mpg' | 'webm';
@@ -40,12 +41,16 @@ export class FileExtension {
       FileExtension.webp,
     ];
 
-    const match = allowed.find((status) => status.value === value);
+    const match = allowed.find((ext) => ext.value === value);
 
     if (!match) {
-      throw new Error(`Invalid FileStatus: ${value}`);
+      throw new Error(`Invalid File Type: ${value}`);
     }
     return match;
+  }
+
+  getFileType(): 'image' | 'video' {
+    return IMAGE_EXTENSIONS.includes(this.value) ? 'image' : 'video';
   }
 
   getValue(): extensions {
