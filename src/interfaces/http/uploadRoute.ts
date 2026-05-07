@@ -15,15 +15,14 @@ export function createUploadRoute(uploadFile: UploadFileUseCase) {
       }
 
       const created = await Promise.all(
-        (req.files as Express.Multer.File[]).map((newFile: Express.Multer.File) =>
-          uploadFile.execute(newFile.originalname, newFile.mimetype, newFile.buffer)
-        )
+        (req.files as Express.Multer.File[]).map((newFile: Express.Multer.File) => uploadFile.execute(newFile.originalname, newFile.mimetype))
       );
 
       res.json(
-        created.map((file) => ({
-          id: file.id.value,
-          status: file.status.getValue(),
+        created.map((data) => ({
+          id: data.file.id.value,
+          status: data.file.status.getValue(),
+          url: data.url,
         }))
       );
     } catch (err) {

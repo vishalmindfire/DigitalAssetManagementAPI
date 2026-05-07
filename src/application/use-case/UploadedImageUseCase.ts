@@ -39,7 +39,7 @@ export class UploadedImageUseCase {
 
       await Promise.all(
         tags.map(async (tag: string) => {
-          await this.fileTagRepo.saveTag(tag, file.id);
+          await this.fileTagRepo.saveTag(tag, file.getId());
         })
       );
 

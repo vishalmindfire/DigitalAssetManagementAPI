@@ -42,6 +42,17 @@ export class MinioStorage implements FileStorage {
     return this.videoBucket;
   }
 
+  async getSignedURL(objectKey: string): Promise<string> {
+    try {
+      const url = await this.client.presignedPutObject(this.getFilesBucket(), objectKey, 86400);
+      logger.info(`[MinIO] presigned URL generated for ${objectKey}`);
+      return url;
+    } catch (err) {
+      logger.error(`[MinIO URL ERROR] ${objectKey}: ${err instanceof Error ? err.message : 'unexpected error'}`);
+      throw err;
+    }
+  }
+
   async upload(bucket: string, fileName: string, stream: Readable, mimeType: string): Promise<string> {
     await this.client.putObject(bucket, fileName, stream, undefined, {
       'Content-Type': mimeType,

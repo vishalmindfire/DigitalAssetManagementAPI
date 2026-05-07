@@ -85,33 +85,32 @@ export class PostgresFileRepository implements FileRepository {
     );
   }
 
-  async getFiles(id: string): Promise<File[] | null> {
-    const result = await this.pool.query<FileRow>('SELECT * FROM file WHERE id = $1', [id]);
+  async getFiles(limit = 50, offset = 0): Promise<File[] | null> {
+    const result = await this.pool.query<FileRow>('SELECT * FROM file ORDER BY created_date ASC LIMIT $2 OFFSET $3', [limit, offset]);
 
     if (result.rows.length === 0) return null;
 
-    const files: File[] = result.rows.map((row) => {
-      return new File(
-        new FileId(row.id),
-        new FileId(row.top_id),
-        FileExtension.from(row.ext as Parameters<typeof FileExtension.from>[0]),
-        row.mime_type,
-        row.bucket,
-        row.object_key,
-        row.progress,
-        FileStatus.from(row.status as Parameters<typeof FileStatus.from>[0]),
-        row.created_date,
-        row.updated_date
-      );
-    });
-
-    return files;
+    return result.rows.map(
+      (row) =>
+        new File(
+          new FileId(row.id),
+          new FileId(row.top_id),
+          FileExtension.from(row.ext as Parameters<typeof FileExtension.from>[0]),
+          row.mime_type,
+          row.bucket,
+          row.object_key,
+          row.progress,
+          FileStatus.from(row.status as Parameters<typeof FileStatus.from>[0]),
+          row.created_date,
+          row.updated_date
+        )
+    );
   }
 
   async save(file: File): Promise<void> {
     await this.pool.query(
       `INSERT INTO file (id, top_id, ext, mime_type, bucket, object_key, progress, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (id) DO UPDATE SET
          progress = EXCLUDED.progress,
          status = EXCLUDED.status,

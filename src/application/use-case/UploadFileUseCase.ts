@@ -1,4 +1,3 @@
-import { Readable } from 'stream';
 import { v4 as uuidv4 } from 'uuid';
 
 import { File } from '#domain/entities/File.js';
@@ -16,22 +15,20 @@ export class UploadFileUseCase {
     private storage: FileStorage
   ) {}
 
-  async execute(fileName: string, mimeType: string, buffer: Buffer): Promise<File> {
+  async execute(fileName: string, mimeType: string): Promise<{ file: File; url: string }> {
     const rawExt = fileName.split('.').pop() ?? '';
     const ext = FileExtension.from(rawExt as Parameters<typeof FileExtension.from>[0]);
     const fileId = new FileId(uuidv4());
-    const storagePath = await this.storage.uploadFile(fileName, Readable.from([buffer]), mimeType);
 
-    const file = new File(fileId, fileId, ext, null, this.storage.getFilesBucket(), storagePath, 0, FileStatus.PENDING, new Date(), null);
+    const file = new File(fileId, fileId, ext, mimeType, this.storage.getFilesBucket(), fileName, 0, FileStatus.PENDING, new Date(), null);
     const tags = file.generateFileTags();
-
+    const presignedURL = await this.storage.getSignedURL(fileName);
+    await this.fileRepo.save(file);
     await Promise.all(
       tags.map(async (tag: string) => {
-        await this.fileTagRepo.saveTag(tag, file.id);
+        await this.fileTagRepo.saveTag(tag, file.getId());
       })
     );
-
-    await this.fileRepo.save(file);
-    return file;
+    return { file: file, url: presignedURL };
   }
 }

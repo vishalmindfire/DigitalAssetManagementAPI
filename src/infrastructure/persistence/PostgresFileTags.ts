@@ -6,6 +6,7 @@ import { FileTagRepository } from '#domain/repositories/fileTagRepository.js';
 import { FileExtension } from '#domain/value-objects/FileExtension.js';
 import { FileId } from '#domain/value-objects/FileId.js';
 import { FileStatus } from '#domain/value-objects/FileStatus.js';
+import { logger } from '#infrastructure/logging/winstonLogger.js';
 
 interface FileRow {
   bucket: string;
@@ -69,25 +70,26 @@ export class PostgresFileTagsRepository implements FileTagRepository {
     return new FileTag(row.id, row.tag, []);
   }
 
-  async saveTag(tag: string, id: File['id']): Promise<void> {
+  async saveTag(tag: string, id: string): Promise<void> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
       const result = await client.query<FileTag>(
-        `INSERT INTO tag (tag)
+        `INSERT INTO tag (word)
             VALUES ($1)
             ON CONFLICT (id) DO NOTHING
-            RETURNING id, tag`,
+            RETURNING id, word`,
         [tag]
       );
       await client.query(
-        `INSERT INTO ref_tile_tag (file_id, tag_id)
+        `INSERT INTO ref_file_tag (file_id, tag_id)
              VALUES ($1, $2)`,
         [id, result.rows[0].id]
       );
       await client.query('COMMIT');
-    } catch (error) {
+    } catch (error: unknown) {
       await client.query('ROLLBACK');
+      logger.error(`Tag insert error ${error instanceof Error ? error : 'unknown'}`);
       throw error;
     } finally {
       client.release();

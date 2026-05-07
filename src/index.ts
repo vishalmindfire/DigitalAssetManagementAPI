@@ -11,7 +11,9 @@ import { logger } from '#infrastructure/logging/winstonLogger.js';
 import { PostgresFileRepository } from '#infrastructure/persistence/PostgresFileRepository.js';
 import { MinioStorage } from '#infrastructure/storage/minioStorage.js';
 import { createUploadRoute } from '#interfaces/http/uploadRoute.js';
+import { createFilterRoute } from '#interfaces/http/filterRoute.js';
 import { PostgresFileTagsRepository } from '#infrastructure/persistence/PostgresFileTags.js';
+import { FilterFileUseCase } from '#application/use-case/FileUseCase.js';
 
 const app = express();
 const httpPort = process.env.HTTP_PORT ?? '3000';
@@ -20,6 +22,7 @@ const storage = new MinioStorage(minioClient, BUCKET, THUMBNAIL_BUCKET, VIDEO_BU
 const fileRepo = new PostgresFileRepository(pgPool);
 const fileTagRepo = new PostgresFileTagsRepository(pgPool);
 const uploadFile = new UploadFileUseCase(fileRepo, fileTagRepo, storage);
+const filterFile = new FilterFileUseCase(fileRepo, fileTagRepo);
 
 app.use(morgan('combined'));
 
@@ -30,7 +33,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/upload', createUploadRoute(uploadFile));
-
+app.use('/filter', createFilterRoute(filterFile));
 app.use((err: Error, req: Request, res: Response) => {
   logger.error('Unhandled error', { error: err.message });
   res.status(500).send('Error');

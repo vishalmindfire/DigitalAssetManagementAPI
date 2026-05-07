@@ -52,7 +52,7 @@ export class UploadedVideoUseCase {
 
       await Promise.all(
         tags.map(async (tag: string) => {
-          await this.fileTagRepo.saveTag(tag, thumbnailFile.id);
+          await this.fileTagRepo.saveTag(tag, thumbnailFile.getId());
         })
       );
       const { process: thumbProcess, stream: thumbStream } = this.videoProcessor.generateThumbnail(Readable.from([videoBuffer]));
@@ -89,7 +89,7 @@ export class UploadedVideoUseCase {
 
           await Promise.all(
             tags.map(async (tag: string) => {
-              await this.fileTagRepo.saveTag(tag, videoFile.id);
+              await this.fileTagRepo.saveTag(tag, videoFile.getId());
             })
           );
           const { process, stream: outputStream } = this.videoProcessor.generateVideo(rendition, Readable.from([videoBuffer]));
