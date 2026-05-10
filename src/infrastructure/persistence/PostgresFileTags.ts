@@ -10,15 +10,17 @@ import { logger } from '#infrastructure/logging/winstonLogger.js';
 
 interface FileRow {
   bucket: string;
-  created_date: Date;
+  created_at: Date;
   ext: string;
   id: string;
   mime_type: string;
   object_key: string;
+  size: number;
+  user_id: string;
   progress: number;
   status: string;
   top_id: string;
-  updated_date: Date | null;
+  updated_at: Date | null;
 }
 
 interface TagRow {
@@ -48,10 +50,12 @@ export class PostgresFileTagsRepository implements FileTagRepository {
         row.mime_type,
         row.bucket,
         row.object_key,
+        row.size,
+        row.user_id,
         row.progress,
         FileStatus.from(row.status as Parameters<typeof FileStatus.from>[0]),
-        row.created_date,
-        row.updated_date
+        row.created_at,
+        row.updated_at
       );
     });
 
