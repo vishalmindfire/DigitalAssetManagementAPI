@@ -10,6 +10,7 @@ import { AssetMessage } from '#infrastructure/messaging/types/asset.js';
 import { FileStorage } from '#domain/repositories/fileStorage.js';
 import { FileRepository } from '#domain/repositories/fileRepository.js';
 import { FileTagRepository } from '#domain/repositories/fileTagRepository.js';
+import { FileExtension } from '#domain/value-objects/FileExtension.js';
 
 export class UploadedVideoUseCase {
   static readonly RENDITIONS: VideoRendition[] = [new VideoRendition('128k', 23, 720, '720p'), new VideoRendition('192k', 21, 1080, '1080p')];
@@ -35,13 +36,16 @@ export class UploadedVideoUseCase {
       const videoBuffer = Buffer.concat(chunks);
 
       const thumbnailKey = this.videoProcessor.thumbnailKey(asset.objectKey);
+      const ext = FileExtension.from('jpg');
       const thumbnailFile: File = new File(
         fileId,
         fileDetail.id,
-        null,
-        null,
+        ext,
+        'image/jpg',
         this.storage.getThumbnailsBucket(),
         thumbnailKey,
+        0,
+        fileDetail.getUserId(),
         0,
         FileStatus.PENDING,
         new Date(),
@@ -71,14 +75,17 @@ export class UploadedVideoUseCase {
       const renditionOps = Promise.all(
         UploadedVideoUseCase.RENDITIONS.map(async (rendition) => {
           const fileId = new FileId(uuidv4());
+          const ext = FileExtension.from('mp4');
           const outputKey = this.videoProcessor.transcodedKey(asset.objectKey, rendition.label);
           const videoFile: File = new File(
             fileId,
             fileDetail.id,
-            null,
-            null,
+            ext,
+            'video/mp4',
             this.storage.getVideosBucket(),
             outputKey,
+            0,
+            fileDetail.getUserId(),
             0,
             FileStatus.PENDING,
             new Date(),

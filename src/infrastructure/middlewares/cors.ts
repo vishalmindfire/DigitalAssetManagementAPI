@@ -1,0 +1,37 @@
+import cors, { CorsOptions } from 'cors';
+import { RequestHandler } from 'express';
+
+const allowedOrigins = [
+  'https://www.cpfsystem.local:5173',
+  'https://www.cpfsystem.local:4000',
+  'https://localhost:5173',
+  'http://www.cpfsystem.local:5173',
+  'http://www.cpfsystem.local:4000',
+  'http://localhost:5173',
+  'http://www.cpfsystem.com:4173',
+  'http://localhost:4173',
+  'https://project-centric-file-system.vercel.app',
+  'https://project-centric-file-system-api.vercel.app',
+  'https://project-centric-file-system-fwh7brom8-vishalmindfires-projects.vercel.app',
+  'https://localhost',
+  'https://34.134.13.200',
+];
+const corsOptions: CorsOptions = {
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void): void => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  },
+};
+
+export const corsMiddleware: RequestHandler = cors(corsOptions) as RequestHandler;

@@ -74,18 +74,20 @@ export class PostgresFileTagsRepository implements FileTagRepository {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      const result = await client.query<FileTag>(
+      const result = await client.query<TagRow>(
         `INSERT INTO tag (word)
             VALUES ($1)
-            ON CONFLICT (id) DO NOTHING
+            ON CONFLICT (word) DO NOTHING
             RETURNING id, word`,
         [tag]
       );
-      await client.query(
-        `INSERT INTO ref_file_tag (file_id, tag_id)
-             VALUES ($1, $2)`,
-        [id, result.rows[0].id]
-      );
+      if (result.rows.length !== 0) {
+        await client.query(
+          `INSERT INTO ref_file_tag (file_id, tag_id)
+                VALUES ($1, $2)`,
+          [id, result.rows[0].id]
+        );
+      }
       await client.query('COMMIT');
     } catch (error: unknown) {
       await client.query('ROLLBACK');

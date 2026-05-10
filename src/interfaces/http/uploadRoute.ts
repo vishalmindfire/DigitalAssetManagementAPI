@@ -1,30 +1,36 @@
-// interfaces/http/uploadRoute.ts
-import { Router } from 'express';
-import multer from 'multer';
+import { Request, Response, Router } from 'express';
+import { checkAuth } from '#infrastructure/middlewares/auth.js';
 
 import { UploadFileUseCase } from '#application/use-case/UploadFileUseCase.js';
 
 export function createUploadRoute(uploadFile: UploadFileUseCase) {
   const router = Router();
-  const upload = multer({ storage: multer.memoryStorage() });
 
-  router.post('/', upload.array('files'), async (req, res) => {
+  router.post('/', checkAuth, async (req: Request, res: Response) => {
     try {
-      if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+      const { name, mimeType, size } = req.body as { name: string; mimeType: string; size: number };
+      const userId = req.user?.id;
+
+      if (!name) {
         return res.status(400).send('No file');
       }
+      if (!userId) {
+        return res.status(401).send('Not authenticated');
+      }
 
-      const created = await Promise.all(
-        (req.files as Express.Multer.File[]).map((newFile: Express.Multer.File) => uploadFile.execute(newFile.originalname, newFile.mimetype))
-      );
+      const created = await uploadFile.execute(name, mimeType, size, userId);
 
-      res.json(
-        created.map((data) => ({
-          id: data.file.id.value,
-          status: data.file.status.getValue(),
-          url: data.url,
-        }))
-      );
+      res.status(200).json({
+        id: created.getId(),
+        name: created.getObjectKey(),
+        size: created.getSize(),
+        mimeType: created.getMimeType(),
+        status: created.getStatus(),
+        progress: created.getProgress(),
+        objectKey: created.getObjectKey(),
+        createDate: created.getCreatedDate(),
+        url: created.url,
+      });
     } catch (err) {
       res.status(500).send({ Error: err });
     }

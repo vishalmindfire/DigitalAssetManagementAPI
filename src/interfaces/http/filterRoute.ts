@@ -1,32 +1,74 @@
 import { Router } from 'express';
 
 import { FilterFileUseCase } from '#application/use-case/FilterFileUseCase.js';
+import { checkAuth } from '#infrastructure/middlewares/auth.js';
 
 const DEFAULT_LIMIT = 50;
-const DEFAULT_OFFSET = 0;
 
 export function createFilterRoute(filterFile: FilterFileUseCase) {
   const router = Router();
 
-  router.get('/', async (req, res) => {
+  router.get('/', checkAuth, async (req, res) => {
     try {
       const limit = Number(req.query.limit) || DEFAULT_LIMIT;
-      const offset = Number(req.query.offset) || DEFAULT_OFFSET;
 
-      const files = await filterFile.getFiles(limit, offset);
+      const userId = req.user?.id;
+      const role = req.user?.role;
+      const fileId = req.query.fileid as string;
+      const createDate = req.query.createdate as string;
+      let cursorInfo = null;
 
-      res.json(
-        files.map((file) => ({
-          bucket: file.getBucket(),
-          ext: file.getExtension(),
-          id: file.getId(),
-          objectKey: file.getObjectKey(),
-          progress: file.getProgress(),
-          status: file.getStatus(),
-        }))
-      );
+      if (!userId || !role) {
+        return res.status(401).send('Not authenticated');
+      }
+      if (fileId && createDate) {
+        cursorInfo = {
+          fileId: req.query.fileid as string,
+          createDate: new Date(req.query.createdate as string),
+        };
+      }
+      const files = await filterFile.getFiles(userId, cursorInfo, limit, role);
+
+      res.status(200).json({
+        files:
+          files.files !== null
+            ? files.files.map((file) => {
+                return {
+                  bucket: file.getBucket(),
+                  ext: file.getExtension(),
+                  id: file.getId(),
+                  objectKey: file.getObjectKey(),
+                  progress: file.getProgress(),
+                  status: file.getStatus(),
+                  name: file.getObjectKey(),
+                  size: file.getSize(),
+                  mimeType: file.getMimeType(),
+                  createdDate: file.getCreatedDate(),
+                  uploadDate: file.getCreatedDate(),
+                  userId: file.getUserId(),
+                };
+              })
+            : null,
+        nextCursor: files.nextCursor,
+      });
     } catch (err) {
       res.status(500).send({ Error: err });
+    }
+  });
+
+  router.patch('/:id', checkAuth, async (req, res) => {
+    try {
+      const { status } = req.body as { status: string };
+      const id = req.params.id as string;
+      if (!id || !status) {
+        return res.status(400).json({ message: 'id and status are required' });
+      }
+
+      await filterFile.updateFileStatus(id, status);
+      res.status(200).json({ message: 'File status updated' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Update failed';
+      res.status(400).json({ message });
     }
   });
 

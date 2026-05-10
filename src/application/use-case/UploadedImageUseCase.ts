@@ -9,7 +9,7 @@ import { FileId } from '#domain/value-objects/FileId.js';
 import { FileStatus } from '#domain/value-objects/FileStatus.js';
 import { ImageProcessor } from '#infrastructure/events/processImage.js';
 import { AssetMessage } from '#infrastructure/messaging/types/asset.js';
-
+import { FileExtension } from '#domain/value-objects/FileExtension.js';
 export class UploadedImageUseCase {
   constructor(
     private storage: FileStorage,
@@ -20,16 +20,18 @@ export class UploadedImageUseCase {
   async execute(asset: AssetMessage): Promise<void> {
     const fileId = new FileId(uuidv4());
     const key = this.imageProcessor.thumbnailKey(asset.objectKey);
-
+    const ext = FileExtension.from('jpg');
     const fileDetail = await this.fileRepo.findByObjectKey(this.storage.getFilesBucket(), asset.objectKey);
     if (fileDetail !== null) {
       const file: File = new File(
         fileId,
         fileDetail.id,
-        null,
-        null,
+        ext,
+        'image/jpg',
         this.storage.getThumbnailsBucket(),
         key,
+        0,
+        fileDetail.getUserId(),
         0,
         FileStatus.PENDING,
         new Date(),

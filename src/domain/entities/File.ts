@@ -5,14 +5,25 @@ import { FileStatus } from '#domain/value-objects/FileStatus.js';
 interface fileDetail {
   bucket: string;
   createdDate: Date;
-  ext: FileExtension | null;
+  ext: FileExtension;
   id: FileId;
-  mimeType: string | null;
+  mimeType: string;
   objectKey: string;
   progress: number;
   status: FileStatus;
   topId: FileId;
+  size: number;
   updatedDate: Date | null;
+  userId: string;
+  url: string | null;
+}
+
+export interface FilesResponse {
+  files: File[] | null;
+  nextCursor: {
+    fileId: string | null;
+    createDate: Date | null;
+  } | null;
 }
 
 export class File implements fileDetail {
@@ -23,10 +34,13 @@ export class File implements fileDetail {
     public readonly mimeType: fileDetail['mimeType'],
     public readonly bucket: fileDetail['bucket'],
     public readonly objectKey: fileDetail['objectKey'],
+    public readonly size: fileDetail['size'],
+    public readonly userId: fileDetail['userId'],
     public progress: fileDetail['progress'],
     public status: fileDetail['status'],
     public createdDate: fileDetail['createdDate'],
-    public updatedDate: fileDetail['updatedDate']
+    public updatedDate: fileDetail['updatedDate'],
+    public url: fileDetail['url'] = null
   ) {}
 
   public generateFileTags(): string[] {
@@ -45,7 +59,7 @@ export class File implements fileDetail {
   }
 
   public getExtension() {
-    return this.ext ? this.ext.getValue() : null;
+    return this.ext.getValue();
   }
 
   public getId(): string {
@@ -76,8 +90,21 @@ export class File implements fileDetail {
     return this.updatedDate;
   }
 
+  public getSize() {
+    return this.size;
+  }
+
+  public getUserId() {
+    return this.userId;
+  }
+
+  public getUpdateDate() {
+    return this.updatedDate;
+  }
+
   markCompleted() {
     this.transition(FileStatus.COMPLETED);
+    this.setProgress(100);
   }
 
   markFailed() {
@@ -92,11 +119,32 @@ export class File implements fileDetail {
     this.progress = progress;
   }
 
+  setUrl(url: string) {
+    this.url = url;
+  }
+
   private transition(next: FileStatus) {
     if (!this.status.canTransitionTo(next)) {
       throw new Error(`Invalid transition: ${this.status.getValue()} → ${next.getValue()}`);
     }
 
     this.status = next;
+  }
+
+  fileDetail() {
+    return {
+      bucket: this.getBucket(),
+      createdDate: this.getCreatedDate(),
+      ext: this.getExtension(),
+      id: this.getId(),
+      mimeType: this.getMimeType(),
+      objectKey: this.objectKey,
+      progress: this.getProgress(),
+      status: this.status,
+      topId: this.getTopId(),
+      size: this.getSize(),
+      updatedDate: this.getUpdatedDate(),
+      userId: this.getUserId(),
+    };
   }
 }
