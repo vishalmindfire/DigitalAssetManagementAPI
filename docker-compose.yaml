@@ -1,9 +1,9 @@
 version: '3'
 services:
-  nodeworkerapp:
-    image: worker:latest
+  node:
+    image: dam:latest
     restart: unless-stopped
-    container_name: nodejs-worker-app-container
+    container_name: nodejs-dam-app-container
     env_file:
       - .env.docker
     ports:
@@ -11,8 +11,66 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     networks:
       - backend
+  nginx:
+    image: nginx-dam:latest
+    container_name: nginx-with-react
+    ports:
+      - '443:443'
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certificates:/etc/nginx/certs
+    depends_on:
+      - node
+    networks:
+      - app-network
+  nodeworkerapp:
+    image: worker:latest
+    restart: unless-stopped
+    container_name: nodejs-worker-app-container
+    deploy:
+      mode: replicated
+      replicas: 3
+    env_file:
+      - .env.docker
+    ports:
+      - '${HTTPS_PORT}:4000'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    container_name: ${DB_HOST}
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - '${DB_PORT}:5432'
+    volumes:
+      - ./dataset:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
   rabbitmq:
     image: rabbitmq:3-management
     ports:
